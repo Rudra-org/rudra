@@ -1,0 +1,158 @@
+# Configuration file for training on CIFAR10
+# Rudra version of the caffe's CIFAR10 model(https://github.com/BVLC/caffe/blob/master/examples/cifar10/cifar10_full.prototxt): 
+# Achieves 18% error in 140 epochs: reduce learning rate by factor 10 after 120 and 130 epochs
+
+
+{ #input layer
+layerName = input
+layerType = input
+dimInput  = 32 32 3
+dimOutput = 32 32 3
+}
+
+
+{ #conv1
+layerName = conv1
+layerType = conv
+actFunc   = identity
+dimInput  = 32 32 3
+dimOutput = 32 32 32
+dimKernel = 5 5
+dimInputPad=2 2
+initWstd  = 0.0001
+initBstd  = 0
+alphaW    = 0.001
+alphaB    = 0.002
+lambdaW   = 0.004
+momW	  = 0.9
+momB	  = 0.9
+}
+
+{ #pooling 1
+layerName = pool1
+layerType = pool
+dimInput  = 32 32 32
+dimOutput = 16 16 32
+dimPool   = 3  3
+dimStride = 2  2
+}
+
+#activation
+{
+layerName = act1
+layerType = activation
+dimInput  = 16 16 32
+dimOutput = 16 16 32
+actFunc   = relu
+}
+
+# response normalization
+{
+layerType  = rnorm
+layerName  = rnorm1
+dimInput   = 16 16 32
+dimOutput  = 16 16 32
+dimNorm    = 3 3
+alpha      = 0.00005
+beta       = 0.75
+}
+
+
+{ #conv2
+layerName = conv2
+layerType = conv
+actFunc   = relu
+dimInput  = 16 16 32
+dimOutput = 16 16 32
+dimKernel = 5 5
+dimInputPad=2 2
+initWstd  = 0.01
+initBstd  = 0
+initBmean = 0
+alphaW    = 0.001
+alphaB    = 0.002
+lambdaW   = 0.004
+momW	  = 0.9
+momB	  = 0.9
+}
+
+{ #pooling 2
+layerName = pool2
+layerType = pool
+poolFunc  = avg
+dimInput  = 16 16 32
+dimOutput = 8  8  32
+dimPool   = 3 3
+dimStride = 2 2
+}
+
+# response normalization
+{
+layerType  = rnorm
+layerName  = rnorm2
+dimInput   = 8 8  32
+dimOutput  = 8 8  32
+dimNorm    = 3 3
+alpha      = 0.00005
+beta       = 0.75
+}
+
+{ #conv3
+layerName = conv3
+layerType = conv
+actFunc   = relu
+dimInput  = 8  8 32
+dimOutput = 8  8 64
+dimKernel = 5 5
+dimInputPad=2 2
+initWstd  = 0.01
+initBstd  = 0
+initBmean = 0
+alphaW    = 0.001
+alphaB    = 0.002
+lambdaW   = 0.004
+momW      = 0.9
+momB      = 0.9
+}
+
+{ #pooling 3
+layerName = pool3
+layerType = pool
+poolFunc  = avg
+dimInput  = 8  8  64
+dimOutput = 4  4  64
+dimPool   = 3 3
+dimStride = 2 2
+}
+
+#bridge layer
+{
+layerName = bridge
+layerType = bridge
+dimInput  = 4 4 64
+dimOutput = 1024
+}
+
+#fully-connected -1
+{
+layerName=fc1
+layerType = fully-connected
+actFunc   = softmax
+dimInput  = 1024
+dimOutput = 10
+initWstd  = 0.01
+initBstd  = 0
+alphaW    = 0.001
+alphaB    = 0.002
+lambdaW   = 1.0
+momW	  = 0.9
+momB	  = 0.9
+}
+
+#output layer
+{
+layerName = output
+layerType = output
+dimInput  = 10
+errFunc	  = cross-entropy
+}

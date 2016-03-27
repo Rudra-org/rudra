@@ -1,0 +1,110 @@
+# Example network config file for LeNet to be trained on MNIST dataset
+# compare to : https://github.com/BVLC/caffe/blob/master/examples/mnist/lenet.prototxt
+
+
+{ #input layer
+layerName = input
+layerType = input
+dimInput  = 28 28 1
+dimOutput = 28 28 1
+}
+
+
+{ #conv1
+layerName = conv1
+layerType = conv
+actFunc   = relu
+dimInput  = 28 28 1
+dimOutput = 24 24 20
+dimKernel = 5 5
+dimInputPad=0 0 
+initWstd  = 0.1
+alphaW    = 0.01
+alphaB    = 0.02
+lambdaW   = 0.0005
+momW	  = 0.9
+momB	  = 0.9
+}
+
+{ #pooling 1
+layerName = pool1
+layerType = pool
+poolFunc  = max
+dimInput  = 24 24 20
+dimOutput = 12 12 20
+dimPool   = 2  2
+dimStride = 2  2
+}
+
+{ #conv2
+layerName = conv2
+layerType = conv
+actFunc   = relu
+dimInput  = 12 12 20
+dimOutput = 8  8 50
+dimKernel = 5  5
+dimInputPad=0 0
+initWstd  = 0.01
+alphaW    = 0.01
+alphaB    = 0.02
+lambdaW   = 0.0005
+momW	  = 0.9
+momB	  = 0.9
+}
+
+{ #pooling 2
+layerName = pool2
+layerType = pool
+poolFunc  = max
+dimInput  = 8 8 50
+dimOutput = 4 4 50
+dimPool   = 2 2
+dimStride = 2 2
+}
+
+#bridge layer
+{
+layerName = bridge
+layerType = bridge
+dimInput = 4 4 50
+dimOutput = 800
+}
+
+#fully-connected -1
+{
+layerName=fc1
+layerType = fully-connected
+actFunc  = relu
+dimInput = 800
+dimOutput = 500
+initWstd  = 0.01
+alphaW    = 0.01
+alphaB    = 0.02
+lambdaW   = 0.0005
+momW	  = 0.9
+momB	  = 0.9
+}
+
+#fully-connected -2
+{
+layerName = fc2
+layerType = fully-connected
+actFunc = softmax
+dimInput = 500
+dimOutput = 10
+initWstd  = 0.01
+alphaW    = 0.01
+alphaB    = 0.02
+lambdaW   = 0.0005
+momW	  = 0.9
+momB	  = 0.9
+}
+
+
+#output layer
+{
+layerName = output
+layerType = output
+dimInput  = 10
+errFunc	  = cross-entropy
+}
