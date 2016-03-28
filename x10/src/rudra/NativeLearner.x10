@@ -43,7 +43,6 @@ import x10.compiler.NativeRep;
 /**
  * Container class for a native learner.
  */
-@NativeCPPInclude("NativeLearnerWrapper.h")
 @NativeRep("c++", "rudra::NativeLearner*", "rudra::NativeLearner", null)
 public class NativeLearner {
 
@@ -88,8 +87,9 @@ public class NativeLearner {
     public def initAsLearner(trainData:String, trainLabels:String,
 			batchSize:long, weightsFile:String, solverType:String):void { }
 
-    @Native("c++", "#this->initAsTester(#placeId, #solverType->c_str())")
-    public def initAsTester(placeId:Long, solverType:String):void { }
+    @Native("c++", "#this->initAsTester(#testData->c_str(), #testLabels->c_str(), #batchSize, #solverType->c_str())")
+    public def initAsTester(testData:String, testLabels:String,
+			batchSize:long, solverType:String):void { }
         
     @Native("c++", "#this->trainMiniBatch()")
     public def trainMiniBatch():float{
@@ -114,8 +114,8 @@ public class NativeLearner {
     @Native("c++", "#this->acceptGradients(#delta->raw, #multiplier)")
     public def acceptGradients(val delta:Rail[Float], val multiplier:Float):void{}
             
-    @Native("c++", "#this->testOneEpochSC(#weights->raw, #numTesters, #myIndex)")
-        public def testOneEpochSC(weights:Rail[Float], numTesters:Long, myIndex:Long):Float {
+    @Native("c++", "#this->testOneEpoch(#weights->raw)")
+        public def testOneEpoch(weights:Rail[Float]):Float {
         return -3.0f;
     }
 

@@ -68,14 +68,17 @@ import x10.io.EOFException;
  * }
  */
 public class RudraConfig {
-/*(testData:String, testLabels:String, layerCfgFile:String,
-    numTestSamples:Long,
-    alpha:Float, momentum:Float,
-    learningSchedule:String, gamma:Float, epochs:Rail[Long]) {
+/*(layerCfgFile:String,
+    alpha:Float, momentum:Float) {
 */
     var trainData:String;
     var trainLabels:String;
     var numTrainSamples:UInt;
+
+    var testData:String;
+    var testLabels:String;
+    var numTestSamples:UInt;
+
     var numEpochs:UInt;
     var mbSize:UInt;
     var checkpointInterval:UInt;
@@ -127,6 +130,12 @@ public class RudraConfig {
                         config.trainLabels = readConfig(line);
                     } else if (line.startsWith("numTrainSamples")) {
                         config.numTrainSamples = readUInt(line);
+                    } else if (line.startsWith("testData")) {
+                        config.testData = readConfig(line);
+                    } else if (line.startsWith("testLabels")) {
+                        config.testLabels = readConfig(line);
+                    } else if (line.startsWith("numTestSamples")) {
+                        config.numTestSamples = readUInt(line);
                     } else if (line.startsWith("numEpochs")) {
                         config.numEpochs = readUInt(line);
                     } else if (line.startsWith("batchSize")) {

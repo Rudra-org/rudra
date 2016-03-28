@@ -65,16 +65,18 @@ public:
 
 	void initAsLearner(std::string trainData, std::string trainLabels,
 			size_t batchSize, std::string weightsFile, std::string solverType);
-	void initAsTester(long placeID, std::string solverType);
+
+	void initAsTester(std::string testData, std::string testLabels,
+			size_t batchSize, std::string solverType);
 
 	int getNetworkSize();
 
-    /**
-     * Train the network with a minibatch of samples, storing the gradients
-     * for later use and returning the training error [0.0-1.0]. Does not
-     * actually update the weights; the update will be performed by a later
-     * call to acceptGradients.
-     */
+	/**
+	 * Train the network with a minibatch of samples, storing the gradients
+	 * for later use and returning the training error [0.0-1.0]. Does not
+	 * actually update the weights; the update will be performed by a later
+	 * call to acceptGradients.
+	 */
 	float trainMiniBatch();
 
 	/**
@@ -91,8 +93,8 @@ public:
 	void accumulateGradients(float *gradients);
 
 	/**
-     * Output the current weights into the specified file.
-     *
+	 * Output the current weights into the specified file.
+	 *
 	 * @param outputFileName name of the file into which to write the weights
 	 */
 	void checkpoint(std::string outputFileName);
@@ -133,15 +135,15 @@ public:
 	/**
 	 * Initialize the network with the given weights, score your fraction
 	 * of the test data, and return the proportion of test errors.
-     * @param weights a set of weights for the network to perform inference
-     * @param numTesters the total number of testing processes
-     * @param myIndex the index of this process in the set of testing processes
-     * @return the proportion of test errors, in the range [0.0,1.0]
+	 * @param weights a set of weights for the network to perform inference
+	 * @param numTesters the total number of testing processes
+	 * @param myIndex the index of this process in the set of testing processes
+	 * @return the proportion of test errors, in the range [0.0,1.0]
 	 */
-	float testOneEpochSC(float *weights, size_t numTesters, size_t myIndex);
+	float testOneEpoch(float *weights);
 
 private:
-    NativeLearnerImpl* pimpl_;
+	NativeLearnerImpl* pimpl_;
 	long pid;
 };
 } // namespace rudra

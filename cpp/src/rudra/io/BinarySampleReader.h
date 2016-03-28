@@ -1,5 +1,5 @@
 /*
- * UnifiedBinarySampleSeqReader.h
+ * BinarySampleReader.h
  *
  * Rudra Distributed Learning Platform
  *
@@ -33,25 +33,40 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UNIFIEDBINARYSAMPLESEQREADER_H_
-#define UNIFIEDBINARYSAMPLESEQREADER_H_
+#ifndef BINARYSAMPLEREADER_H_
+#define BINARYSAMPLEREADER_H_
 
-#include "rudra/io/UnifiedBinarySampleReader.h"
+#include "rudra/io/SampleReader.h"
+#include "rudra/util/RudraRand.h"
+#include <string>
+#include <vector>
 
 namespace rudra {
-class UnifiedBinarySampleSeqReader: public UnifiedBinarySampleReader {
+enum BinFileType {
+	CHAR, INT, FLOAT, INVALID
+};
+class BinarySampleReader: public SampleReader {
 public:
-	size_t cursor;
-	UnifiedBinarySampleSeqReader(std::string sampleFileName,
-			std::string labelFileName);
-	UnifiedBinarySampleSeqReader(std::string sampleFileName,
-			std::string labelFileName, size_t cursor);
-	~UnifiedBinarySampleSeqReader();
+	std::string trainingDataFile;
+	std::string trainingLabelFile;
+	BinFileType trainingDataFileType;
+	BinFileType trainingLabelFileType;
 
-	void readLabelledSamples(size_t batchSize, float* X, float* Y);
+	BinarySampleReader(std::string sampleFileName, std::string labelFileName);
+	~BinarySampleReader();
 
-	void setLabelDim();
+	std::string getFileExt(const std::string& s);
+	BinFileType lookupFileType(const std::string& s);
+	void readLabelledSamples(const std::vector<size_t>& idx, float* X,
+			float* Y);
+
+protected:
+	void retrieveData(const size_t numSamples, const std::vector<size_t>& idx,
+			float* X, float* Y);
+private:
+	void checkFiles(); // to check if files exist
+	void initSizePerLabel();
 };
 } /* namespace rudra */
 
-#endif /* UNIFIEDBINARYSAMPLESEQREADER_H_ */
+#endif /* BINARYSAMPLEREADER_H_ */

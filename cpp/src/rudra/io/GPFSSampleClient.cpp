@@ -36,26 +36,34 @@
 #include "rudra/io/GPFSSampleClient.h"
 #include <cstring>
 #include <pthread.h>
+#include <algorithm>
 
 namespace rudra {
+
 GPFSSampleClient::GPFSSampleClient(std::string name, size_t batchSize,
-		bool threaded, SampleReader* reader) :
-		batchSize(batchSize), threaded(threaded), sampleReader(reader), X(
+		SampleReader* reader) :
+		batchSize(batchSize), sampleReader(reader), X(
 				new float[batchSize * reader->sizePerSample]), Y(
 				new float[batchSize * reader->sizePerLabel]), finishedFlag(
-				false) {
+				false), rand(), cursor(0), isRandom(false) {
+	this->init();
+}
+
+GPFSSampleClient::GPFSSampleClient(std::string name, size_t batchSize,
+		SampleReader* reader, RudraRand rand) :
+		batchSize(batchSize), sampleReader(reader), X(
+				new float[batchSize * reader->sizePerSample]), Y(
+				new float[batchSize * reader->sizePerLabel]), finishedFlag(
+				false), rand(rand), cursor(0), isRandom(true) {
 	this->init();
 }
 
 void GPFSSampleClient::init() {
 	this->count = 0;
-	if (threaded) {
-		pthread_mutex_init(&(mutex), NULL);
-		pthread_cond_init(&(fill), NULL);
-		pthread_cond_init(&(empty), NULL);
-		this->startProducerThd();
-	}
-
+	pthread_mutex_init(&(mutex), NULL);
+	pthread_cond_init(&(fill), NULL);
+	pthread_cond_init(&(empty), NULL);
+	this->startProducerThd();
 }
 
 struct p_thd_args {
@@ -86,7 +94,20 @@ void GPFSSampleClient::producerThdFunc(void *args) {
 		if (finishedFlag) {
 			return;
 		}
-		sampleReader->readLabelledSamples(batchSize, X, Y);
+
+		std::vector<size_t> idx(batchSize);
+		if (isRandom) {
+			for (size_t i = 0; i < batchSize; ++i) {
+				idx[i] = rand.getLong() % sampleReader->numSamples;
+			}
+			std::sort(idx.begin(), idx.end());
+		} else {
+			for (size_t i = 0; i < batchSize; ++i) {
+				idx[i] = (cursor++) % sampleReader->numSamples;
+			}
+		}
+
+		sampleReader->readLabelledSamples(idx, X, Y);
 		count++; // don't forget to increment count
 		pthread_cond_signal(&fill);
 		pthread_mutex_unlock(&mutex);
@@ -95,22 +116,16 @@ void GPFSSampleClient::producerThdFunc(void *args) {
 }
 
 void GPFSSampleClient::getLabelledSamples(float* samples, float* labels) {
-	if (threaded) {
-		pthread_mutex_lock(&mutex);
-		while (count == 0) {
-			pthread_cond_wait(&fill, &mutex);
-		}
-		memcpy(samples, X,
-				batchSize * sampleReader->sizePerSample * sizeof(float));
-		memcpy(labels, Y,
-				batchSize * sampleReader->sizePerLabel * sizeof(float));
-
-		count--; // don't forget the decrement count
-		pthread_cond_signal(&empty);
-		pthread_mutex_unlock(&mutex);
-	} else {
-		sampleReader->readLabelledSamples(batchSize, samples, labels);
+	pthread_mutex_lock(&mutex);
+	while (count == 0) {
+		pthread_cond_wait(&fill, &mutex);
 	}
+	memcpy(samples, X, batchSize * sampleReader->sizePerSample * sizeof(float));
+	memcpy(labels, Y, batchSize * sampleReader->sizePerLabel * sizeof(float));
+
+	count--; // don't forget the decrement count
+	pthread_cond_signal(&empty);
+	pthread_mutex_unlock(&mutex);
 }
 
 size_t GPFSSampleClient::getSizePerSample() {
@@ -122,13 +137,11 @@ size_t GPFSSampleClient::getSizePerLabel() {
 }
 
 GPFSSampleClient::~GPFSSampleClient() {
-	if (threaded) {
-		pthread_mutex_lock(&mutex);
-		finishedFlag = true;
-		pthread_cond_signal(&empty);
-		pthread_mutex_unlock(&mutex);
-		pthread_join(producerTID, NULL); // join the producer thread
-	}
+	pthread_mutex_lock(&mutex);
+	finishedFlag = true;
+	pthread_cond_signal(&empty);
+	pthread_mutex_unlock(&mutex);
+	pthread_join(producerTID, NULL); // join the producer thread
 	delete[] X;
 	delete[] Y;
 }

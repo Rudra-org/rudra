@@ -176,15 +176,13 @@ void readRecordFromBinMat(T* buf, const size_t idx, const size_t recordSize,
 /**
  * Read a number of records from a binary file into a matrix buffer.
  * @param buf the matrix buffer into which to read the records
- * @param numRecords the total number of records to read
  * @param idx the file indices of the records to be read
  * @param recordSize the size of each record in number of fields of type T
  * @param fileName name of the binary file
  */
 template<class T>
-void readRecordsFromBinMat(T* buf, const size_t numRecords,
-		const std::vector<size_t> idx, const size_t recordSize,
-		std::string fileName) {
+void readRecordsFromBinMat(T* buf, const std::vector<size_t> idx,
+		const size_t recordSize, std::string fileName) {
 
 	std::ifstream f1(fileName.c_str(), std::ios::in | std::ios::binary);
 	if (!f1) {
@@ -193,7 +191,7 @@ void readRecordsFromBinMat(T* buf, const size_t numRecords,
 		exit(EXIT_FAILURE);
 	}
 
-	for (size_t i = 0; i < numRecords; ++i) {
+	for (size_t i = 0; i < idx.size(); ++i) {
 		readRecordFromBinMat(buf + i * recordSize, idx[i], recordSize, f1);
 	}
 }

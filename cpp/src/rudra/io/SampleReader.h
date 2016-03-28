@@ -42,6 +42,7 @@
 #include <fstream>
 #include <string>
 #include <endian.h>
+#include <vector>
 
 namespace rudra {
 class SampleReader {
@@ -53,7 +54,7 @@ public:
 	SampleReader() {
 	}
 
-	virtual void readLabelledSamples(const size_t batchSize, float* X,
+	virtual void readLabelledSamples(const std::vector<size_t>& idx, float* X,
 			float* Y) = 0;
 
 	/**

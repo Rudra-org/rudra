@@ -90,8 +90,8 @@ public class Tester(config:RudraConfig, testerPlace:Place, confName:String, logg
             val weights = new Rail[Float](testWeightsGR.size);
             finish Rail.asyncCopy(testWeightsGR, 0, weights, 0, weights.size);
             val nn = new NativeLearner(here.id);
-            nn.initAsTester(here.id, solverType);
-            val res = nn.testOneEpochSC(weights, 1, 0);
+            nn.initAsTester(config.testData, config.testLabels, config.mbSize, solverType);
+            val res = nn.testOneEpoch(weights);
             checkpointIfNeeded(epoch, nn);
             nn.cleanup();
             return res;

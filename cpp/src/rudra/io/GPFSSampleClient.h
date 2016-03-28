@@ -38,6 +38,7 @@
 
 #include "rudra/io/SampleReader.h"
 #include "rudra/io/SampleClient.h"
+#include "rudra/util/RudraRand.h"
 #include <iostream>
 #include <pthread.h>
 
@@ -48,8 +49,14 @@ class GPFSSampleClient: public SampleClient {
 public:
 	const size_t batchSize;
 
-	GPFSSampleClient(std::string name, size_t batchSize, bool threaded,
+	/** Construct a new GPFSSampleClient to read samples in order. */
+	GPFSSampleClient(std::string name, size_t batchSize,
 			SampleReader *sampleReader);
+
+	/** Construct a new GPFSSampleClient to read random samples. */
+	GPFSSampleClient(std::string name, size_t batchSize,
+			SampleReader *sampleReader, RudraRand rand);
+
 	//@Override
 	void getLabelledSamples(float* samples, float* labels);
 	size_t getSizePerSample();
@@ -58,10 +65,12 @@ public:
 protected:
 	void producerThdFunc(void *args);
 private:
-	bool threaded;
 	SampleReader *sampleReader;
 	float* X; // training data minibatch
 	float* Y; // training label minibatch
+	const bool isRandom;
+	RudraRand rand; // PRNG for random sampling
+	size_t cursor; // file cursor for sequential sampling
 	volatile bool finishedFlag;
 	volatile int count;
 	pthread_cond_t empty;
@@ -71,7 +80,6 @@ private:
 	void startProducerThd();
 	static void* producerThdHook(void *args);
 	void init();
-
 };
 }
 #endif /* RUDRA_IO_GPFSSAMPLECLIENT_H */
