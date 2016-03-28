@@ -68,10 +68,8 @@ import x10.io.EOFException;
  * }
  */
 public class RudraConfig {
-/*(trainData:String, trainLabels:String,
-    testData:String, testLabels:String, layerCfgFile:String,
+/*(testData:String, testLabels:String, layerCfgFile:String,
     numTestSamples:Long,
-    numInputDim:Long, numClasses:Long,
     alpha:Float, momentum:Float,
     learningSchedule:String, gamma:Float, epochs:Rail[Long]) {
 */
@@ -156,7 +154,9 @@ public class RudraConfig {
         }
 
         val lrMult = new Rail[Float](config.numEpochs);
-        if (learningSchedule.equals("exponential")) {
+        if (learningSchedule == null) {
+            throw new Exception("Config missing: learning schedule [contant|exponential|power|step]");
+        } else if (learningSchedule.equals("exponential")) {
             if (gamma <= 0.0f) {
                 throw new Exception("Config missing: gamma (must be greater than 0.0)");
             }
