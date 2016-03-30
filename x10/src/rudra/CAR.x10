@@ -62,8 +62,7 @@ import x10.io.Unserializable;
  **/
 public class CAR(config:RudraConfig, learnerGroup:PlaceGroup, CRAB:Boolean,
                  confName:String, noTest:Boolean,
-                 weightsFile:String, meanFile:String, 
-                 solverType:String, seed:Int, mom:Float,
+                 weightsFile:String, solverType:String, seed:Int, mom:Float,
                  adarho:Float, adaepsilon:Float,
                  spread:UInt, H:Float, S:UInt, 
                  ll:Int, lr:Int, lt:Int, ln:Int)   {
@@ -133,7 +132,7 @@ public class CAR(config:RudraConfig, learnerGroup:PlaceGroup, CRAB:Boolean,
         finish for (p in learnerGroup) at(p) async { // this is meant to leak in!!
                 logger.info(()=>"CAR: In main async.");
             val done = new AtomicBoolean(false);
-            Learner.initNativeLearnerStatics(config, confName, meanFile, seed, mom, 
+            Learner.initNativeLearnerStatics(config, confName, seed, mom, 
                                              adarho, adaepsilon, ln);
             logger.info(()=>"CAR: Initialized native learner statics.");
             val nl = Learner.makeNativeLearner(config, weightsFile, solverType);
@@ -227,8 +226,8 @@ public class CAR(config:RudraConfig, learnerGroup:PlaceGroup, CRAB:Boolean,
                         }
                     }
                 }
-                done.set(true);
                 if (toUpdater.needsData()) toUpdater.put(dest); // unblock it if it is blocked there
+                done.set(true);
                 val index_=index, phi=myTotal;
                 logger.info(()=>"CAR.Reducer: Exited main loop (phi=" + phi+",index=" + index_ + ")");
                 logger.notify(()=> "" + reduceTimer);
@@ -242,6 +241,10 @@ public class CAR(config:RudraConfig, learnerGroup:PlaceGroup, CRAB:Boolean,
                 val threshold:UInt = S / (config.mbSize*2un);
                 val bcastTimer = new Timer("bcast Time:");
                 val updateTimer = new Timer("update Time:");
+
+                val testManager = (here.id==0) ? new TestManager(config, state.reconcilerNL, noTest, solverType, lt) : null;
+                if (testManager != null) testManager.initialize();
+
                 var index:Int=0n;
                 while (!done.get()) { 
                     val phi=myTimeStamp, index_=index;
@@ -282,10 +285,10 @@ public class CAR(config:RudraConfig, learnerGroup:PlaceGroup, CRAB:Boolean,
                         updateTimer.tic();
                         state.acceptNWGradient(dest_);
                         updateTimer.toc();
+                        if (testManager != null) testManager.touch(deltaLoad);
                         logger.info(()=> "CAR.Receiver: Shifted with " + dest_ 
                                     + "(phi=" + (phi+deltaLoad) + " " + 
                                     updateTimer.lastDurationMillis() + ")" );
-
                     }
 
                     // follow learning rate schedule given in config file
@@ -295,6 +298,7 @@ public class CAR(config:RudraConfig, learnerGroup:PlaceGroup, CRAB:Boolean,
                         state.reconcilerNL.setLearningRateMultiplier(newLearningRate);
                     }
                 } // while
+                if (testManager != null) testManager.finalize();
                 val phi = myTimeStamp, index_=index;
                 logger.notify(()=>"CAR.Receiver: Exited main loop (phi=" + phi + ",index=" + (index_+1)+")");
                 if (CRAB) logger.notify(()=> "" + bcastTimer);
@@ -303,21 +307,17 @@ public class CAR(config:RudraConfig, learnerGroup:PlaceGroup, CRAB:Boolean,
             logger.info(()=>"CAR.Learner: started. mbPerEpoch=" + mbPerEpoch);
             var compG:TimedGradient = new TimedGradient(size); 
             compG.timeStamp = UInt.MAX_VALUE;
-            val testManager = here.id==0? learner.new TestManager(config, noTest, solverType) : null;
-            if (testManager != null) testManager.initialize();
+
             val currentWeight = new TimedWeight(networkSize);
             val trainTimer = new Timer("Training time:");
-            learner.epochStartTime = System.nanoTime();
             while (! done.get()) {
                 learner.computeGradient(compG);
                 compG = learner.deliverGradient(compG, fromLearner);
                 if (state.fillInWeights(currentWeight)) { // may block
                     learner.acceptWeights(currentWeight);
-                    if (testManager != null) testManager.touch();
                 }
             } // while !done
 
-            if (testManager != null) testManager.finalize();
             logger.info(()=>"CAR.Learner: Exited main loop.");
             logger.notify(()=> "" + learner.cgTimer);
             logger.notify(()=> "" + learner.weightTimer);

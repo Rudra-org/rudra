@@ -58,7 +58,7 @@ import x10.io.Unserializable;
 public class SendReceive(config:RudraConfig,
                          learnerGroup:PlaceGroup, numXfers:UInt,
                          noTest:Boolean, confName:String, 
-                         weightsFile:String, meanFile:String, 
+                         weightsFile:String,
                          solverType:String, seed:Int, mom:Float,
                          adarho:Float, adaepsilon:Float,
                            spread:UInt, 
@@ -108,8 +108,6 @@ public class SendReceive(config:RudraConfig,
             super(config, confName, spread, nLearner, team, logger, lt, solverType);
         }
 
-        var testManager:TestManager = null;
-
         // controls the number of transfers that are supported simultaneously
         // "filled", with nulls.
         val railBuffer = new BBuffer[Rail[Float]](numXfers as Int, null, numXfers as Int); 
@@ -118,6 +116,7 @@ public class SendReceive(config:RudraConfig,
         //        val weightRequestBuffer = new BBuffer[GlobalTimedWeight](numXFers as Int, null, numXfers as Int); // filled with nulls.
         val xferTimer = new Timer("Gradient xfer time:");
         val timeStamp = new AtomicInteger(0n);
+        var totalMBProcessed:UInt = 0un;
 
         /** Accept a request from a learner to receive gradients. 
             Transfer the gradient, and queue it up for further 
@@ -141,9 +140,9 @@ public class SendReceive(config:RudraConfig,
             val rail = rail_==null? new Rail[Float](size) : rail_;
                  xferTimer.tic();
             finish Rail.asyncCopy(g.grad, 0, rail, 0, rail.size);
-                 xferTimer.toc();
-                 logger.info(()=> "PS: acquired buffer data for " + g + " in " + 
-                             xferTimer.lastDurationMillis() + " ms");
+            xferTimer.toc();
+            logger.info(()=> "PS: acquired buffer data for " + g + " in " + 
+                xferTimer.lastDurationMillis() + " ms");
             gradBuffer.put(rail);
         } // accept
 
@@ -171,21 +170,20 @@ public class SendReceive(config:RudraConfig,
 
         def run() {
             logger.info(()=>"PS: Starting initialize");
-            testManager = (this as Learner).new TestManager(config, noTest, solverType);
+            val testManager = new TestManager(config, this.nLearner, noTest, solverType, lt);
             testManager.initialize();
-            epochStartTime  = System.nanoTime();
             initWeightsIfNeeded(weightsFile);
 
             logger.info(()=>"PS: At rock and roll barrier");
             team.barrier(); // ready to rock and roll
             while (totalMBProcessed < maxMB) {
                 val rail = gradBuffer.get();
-                logger.info(()=> "PS: in monitor, updating weights with ");
+                logger.info(()=> "PS: in monitor, updating weights");
                 weightMonitor.atomicBlock(()=>{
                         acceptGradients(rail, 1un);
                         totalMBProcessed++;                        
                         timeStamp.incrementAndGet();
-                        testManager.touch(); // may need to serialize weights
+                        testManager.touch(1);
                         Unit()
                     });
                 railBuffer.put(rail); // now return it
@@ -200,7 +198,7 @@ public class SendReceive(config:RudraConfig,
     def run() {
         val team = new Team(learnerGroup);
 
-        Learner.initNativeLearnerStatics(config, confName, meanFile, seed, mom, 
+        Learner.initNativeLearnerStatics(config, confName, seed, mom, 
                                          adarho, adaepsilon, ln);
         val nl = Learner.makeNativeLearner(config, weightsFile, solverType);
 
@@ -229,7 +227,7 @@ public class SendReceive(config:RudraConfig,
             logger.info(()=>"SR: Starting place loop");
             for (p in learnerGroup) 
                 if (p.id !=0) at(p) async { 
-                        Learner.initNativeLearnerStatics(config, confName, meanFile,
+                        Learner.initNativeLearnerStatics(config, confName,
                                                          seed, mom, 
                                                          adarho, adaepsilon, ln);
                         logger.info(()=>"SR: Starting main at " + here);
@@ -240,7 +238,6 @@ public class SendReceive(config:RudraConfig,
                         val toLearner = new XchgBuffer[GlobalTimedWeight](new GlobalTimedWeight(networkSize)); 
                         val learner = new Learner(config, confName, spread,
                                                   nLearner, team, logger, lt, solverType);
-                        learner.epochStartTime= System.nanoTime();
                         learner.initWeightsIfNeeded(weightsFile);
                         logger.info(()=>"SR.learner: ready to rock and roll.");
                         team.barrier(); // ready to rock and roll

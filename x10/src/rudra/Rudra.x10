@@ -54,7 +54,7 @@ import rudra.util.PhasedT;
  */
 public class Rudra(config:RudraConfig,
                    CRAB:Boolean, confName:String, noTest:Boolean,
-                   weightsFile:String, meanFile:String, 
+                   weightsFile:String,
                    solverType:String, seed:Int, mom:Float,
                    adarho:Float, adaepsilon:Float,
 
@@ -131,7 +131,7 @@ public class Rudra(config:RudraConfig,
             }
             val testerPlace = Place.places()(Place.numPlaces()-1);
             at(testerPlace) {
-                Learner.initNativeLearnerStatics(config, confName, meanFile,
+                Learner.initNativeLearnerStatics(config, confName,
                     seed, mom, adarho, adaepsilon, ln);
             }
         }
@@ -144,8 +144,7 @@ public class Rudra(config:RudraConfig,
             }
             logger.info(()=>"SB: Starting.");
             new SendBroadcast(config, learnerGroup, hardSync, confName, noTest,
-                    weightsFile, meanFile,
-                    solverType, seed, mom,
+                    weightsFile, solverType, seed, mom,
                     adarho, adaepsilon,
                     spread, H, S,
                     ll, lt, ln)
@@ -155,8 +154,7 @@ public class Rudra(config:RudraConfig,
         if (nwMode == NW_SEND_RECEIVE) {
             logger.info(()=>"SR: Starting.");
             new SendReceive(config, learnerGroup, numXfers, noTest, confName,
-                    weightsFile, meanFile,
-                    solverType, seed, mom,
+                    weightsFile, solverType, seed, mom,
                     adarho, adaepsilon,
                     spread,
                     ll, lt, ln)
@@ -168,8 +166,7 @@ public class Rudra(config:RudraConfig,
             logger.info(()=>"CAR: Starting.");
         
             new CAR(config, learnerGroup, CRAB, confName, noTest,
-                    weightsFile, meanFile,
-                    solverType, seed, mom,
+                    weightsFile, solverType, seed, mom,
                     adarho, adaepsilon,
                     spread, H, S, 
                     ll, lr, lt, ln)
@@ -185,10 +182,8 @@ public class Rudra(config:RudraConfig,
 
         finish for (p in learnerGroup) at(p) async { // this is meant to leak in!!
             val done = new AtomicBoolean(false);
-            Learner.initNativeLearnerStatics(config, confName, meanFile, 
-                                             seed, mom,
-                                             adarho, adaepsilon,
-                                             ln);
+            Learner.initNativeLearnerStatics(config, confName, seed, mom,
+                                             adarho, adaepsilon, ln);
 
             val mbSize = config.mbSize;
             val numTrainSamples = config.numTrainSamples;
@@ -282,8 +277,6 @@ public class Rudra(config:RudraConfig,
                 Option("-nwSize", "networkBufferSize", "Size of nw buffer,"
                        + " used only with -nwMode " 
                        + DEFAULT_NW_SIZE + "n"),
-                Option("-meanFile", "meanFile", "Path to the mean file, used for"
-                       + " processing image data, e.g. for ImageNet"),
 
                 Option("-beatCount", "beatCount", "In SendBroadcast,"
                        + " num updates after which weights are broadcast" 
@@ -330,8 +323,6 @@ public class Rudra(config:RudraConfig,
         // log directory, under RUDRA_HOME/LOG/ 
         val jobDir:String     = cmdLineParams("-j", "job" + System.currentTimeMillis()); 
         val weightsFile:String= cmdLineParams("-restart", ""); // weights file 
-        val meanFile:String   = cmdLineParams("-meanFile", null as String);
-
 
         val solverType:String = cmdLineParams("-s", DEFAULT_SOLVER).trim();
         val seed:Int          = cmdLineParams("-seed", DEFAULT_SEED);
@@ -388,7 +379,6 @@ public class Rudra(config:RudraConfig,
         bootLogger.emit("Running with code |" + CodeId.commitHash+ "|");
         bootLogger.emit("rudra -f |" + confName  + "|"
                         + "\n\t -j " + jobDir + " -restart |" + weightsFile  + "|"
-                        + " -meanFile |" + meanFile + "|"
                         + "\n\t -s |" + solverType + "| -seed " + seed 
                         + " -mom " + mom
 
@@ -408,7 +398,7 @@ public class Rudra(config:RudraConfig,
                         + " -lu " + Logger.levelString(lu) 
                         + " -ln " + Logger.levelString(ln));
         val rudra = new Rudra(config, CRAB, confName, noTest,
-                              weightsFile, meanFile,
+                              weightsFile,
                               solverType, seed, mom,
                               adrho, adepsilon,
                               nwMode, hardSync, 

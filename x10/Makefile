@@ -55,7 +55,7 @@ else
 endif
 
 all: rudra
-rudra: src/rudra/Rudra.x10 src/rudra/Learner.x10 src/rudra/Tester.x10 src/rudra/ImmedLearner.x10 src/rudra/ImmedReconciler.x10 src/rudra/ApplyLearner.x10 src/rudra/ApplyReconciler.x10 src/rudra/HardSync.x10 src/rudra/AtLeastRAllReducer.x10 src/rudra/NativeLearner.x10 src/rudra/util/*SwapBuffer.x10 src/rudra/util/Timer.x10 src/rudra/util/Logger.x10 
+rudra: src/rudra/Rudra.x10 src/rudra/Learner.x10 src/rudra/Tester.x10 src/rudra/TestManager.x10 src/rudra/ImmedLearner.x10 src/rudra/ImmedReconciler.x10 src/rudra/ApplyLearner.x10 src/rudra/ApplyReconciler.x10 src/rudra/HardSync.x10 src/rudra/AtLeastRAllReducer.x10 src/rudra/NativeLearner.x10 src/rudra/util/*SwapBuffer.x10 src/rudra/util/Timer.x10 src/rudra/util/Logger.x10 
 	x10c++ $(X10FLAG) -sourcepath src $(X10_POST) $(X10CXX_PREARGS) $(X10CXX_POSTARGS) -d ./tmp src/rudra/Rudra.x10 -o $(RUDRA_HOME)/$(RUDRA_EXE)
 
 clean:

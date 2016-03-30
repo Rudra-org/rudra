@@ -1,5 +1,4 @@
 /**
- *
  * Learner.x10
  *
  * Rudra Distributed Learning Platform
@@ -39,7 +38,6 @@ package rudra;
 import rudra.util.Logger;
 import rudra.util.Timer;
 import rudra.util.SwapBuffer;
-import rudra.util.BlockingRXchgBuffer;
 
 import x10.compiler.NonEscaping;
 import x10.compiler.Pinned;
@@ -51,12 +49,12 @@ import x10.io.Unserializable;
                      team:Team, logger:Logger, lt:Int,
                      solverType:String) implements Unserializable {
     
-    public static def initNativeLearnerStatics(config:RudraConfig, confName:String, meanFile:String,
+    public static def initNativeLearnerStatics(config:RudraConfig, confName:String,
                    seed:Int, mom:Float,
                    adaDeltaRho:Float, adaDeltaEpsilon:Float,
                    ln:Int) {
         NativeLearner.setLoggingLevel(ln);
-        if (meanFile!=null) NativeLearner.setMeanFile(meanFile);
+        if (config.meanFile != null) NativeLearner.setMeanFile(config.meanFile);
         NativeLearner.setAdaDeltaParams(adaDeltaRho, adaDeltaEpsilon, 
                                         Rudra.DEFAULT_ADADELTA_RHO, Rudra.DEFAULT_ADADELTA_EPSILON);
         NativeLearner.setSeed(here.id, seed, Rudra.DEFAULT_SEED);
@@ -81,8 +79,6 @@ import x10.io.Unserializable;
 
     val startTime = System.nanoTime();
     val id = here.id;
-    var totalMBProcessed:UInt = 0un;
-    var epoch:UInt = 0un;
     var timeStamp:UInt = 0un;
     val P = Place.numPlaces();
     val networkSize = getNetworkSize(nLearner);
@@ -190,66 +186,8 @@ import x10.io.Unserializable;
             + " received network input at older time " + g.timeStamp;
         timeStamp = g.timeStamp;
         acceptGradients(g.grad, includeMB);
-        totalMBProcessed += includeMB;
         logger.info(()=>"Learner: processed network i/p " + g);
     }
-
-    public def getTotalMBProcessed():UInt = totalMBProcessed;
-    var epochStartTime:Long = 0;
-
-    /**
-     * The TestManager runs at Place 0 (alongside either a parameter server or a
-     * learner) and sends weights to the Tester, which performs testing at
-     * Place(P-1).
-     */
-    public class TestManager(config:RudraConfig, noTest:Boolean, solverType:String) {
-        val toTester = new BlockingRXchgBuffer[TimedWeightWRuntime](new TimedWeightWRuntime(networkSize));
-        var weights:TimedWeightWRuntime= new TimedWeightWRuntime(networkSize);
-        var lastTested:UInt=0un;
-        def initialize() {
-            if (noTest) return;
-            val testerPlace = Place.places()(Place.numPlaces()-1);
-            async new Tester(config, testerPlace, confName, new Logger(lt), solverType).run(networkSize, toTester);
-        }
-
-        def touch() { touch(null); }
-
-        def touch(tw:TimedWeight):void {
-            if (noTest) return;
-            // Called by place 0 learner or PS: Test for epoch transition.
-            // Try to get a Tester to run with these weights
-            val ts = tw==null? getTotalMBProcessed() : tw.timeStamp();
-            val thisEpoch = ts/mbPerEpoch;
-            if (thisEpoch <= epoch) return;
-            val oldEpoch = epoch;
-            val epochEndTime = System.nanoTime();
-            val epochRuntime = epochEndTime-epochStartTime;
-            val timeTaken = Timer.time(epochRuntime);
-            //            logger.emit(()=>"Learner: Epoch "  + oldEpoch + " took " + timeTaken);
-            epoch = thisEpoch;
-            epochStartTime=epochEndTime;
-            if (tw == null) serializeWeights(weights.weightRail());
-            else  Rail.copy(tw.weightRail(), weights.weightRail());
-            weights.setTimeStamp(oldEpoch);
-            weights.setRuntime(epochRuntime/(1000*1000)); // in ms.
-            val w = weights;
-            logger.emit(()=>"Learner: Pinging tester with "  + w);
-            weights = toTester.put(weights);
-            if (weights != w) lastTested=oldEpoch;
-            logger.emit(()=>"Learner: Tester "+(weights!=w?"accepted " : "did not accept ")+w);
-        }
-
-        def finalize() {
-            if (!noTest) {
-                if (lastTested < epoch) { // make sure u test the last weights
-                    weights.timeStamp=epoch;
-                    serializeWeights(weights.weight);
-                    toTester.put(weights);
-                }
-                toTester.put(TimedWeightWRuntime.POISON);
-            }
-        }
-    } // TestManager
 
     /** 
         Ensure that all learners start with the same initial weight. Should not
@@ -294,7 +232,6 @@ import x10.io.Unserializable;
         logger.info(()=>"Learner: accepting weights " + cw);
         val includeMB = cw.loadSize();
         timeStamp = cw.timeStamp();
-        totalMBProcessed += includeMB;
         deserializeWeights(cw.weightRail());
         weightTimer.addDuration(System.nanoTime()-startTime);
         logger.info(()=>"Learner: accepted weights " + cw);

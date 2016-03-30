@@ -1,5 +1,4 @@
 /**
- *
  * SendBroadcast.x10
  *
  * Rudra Distributed Learning Platform
@@ -83,7 +82,7 @@ import rudra.util.Unit;
 public class SendBroadcast(config:RudraConfig,
                            learnerGroup:PlaceGroup, hardSync:Boolean,
                            confName:String, noTest:Boolean,
-                           weightsFile:String, meanFile:String, 
+                           weightsFile:String,
                            solverType:String, seed:Int, mom:Float,
                            adarho:Float, adaepsilon:Float, 
                            spread:UInt, H:Float, S:UInt, 
@@ -140,9 +139,8 @@ public class SendBroadcast(config:RudraConfig,
         } // accept
         def run() {
             logger.info(()=>"PS: Starting initialize");
-            val testManager = noTest ? null : (this as Learner).new TestManager(config, noTest, solverType);
+            val testManager = noTest ? null : new TestManager(config, this.nLearner, noTest, solverType, lt);
             if (testManager!= null) testManager.initialize();
-            epochStartTime  = System.nanoTime();
             initWeightsIfNeeded(weightsFile);
 
             logger.info(()=>"PS: At rock and roll barrier");
@@ -192,8 +190,10 @@ public class SendBroadcast(config:RudraConfig,
             val SUnits = S / config.mbSize;
             val beatCountUnits = beatCount / config.mbSize;
             var gradient: Rail[Float] = SUnits > 1un? new Rail[Float](size) : null;
+            var totalMBProcessed:UInt = 0un;
             while (totalMBProcessed < maxMB) {
-                logger.info(()=> totalMBProcessed + " ** " + maxMB);
+                val totalMB = totalMBProcessed;
+                logger.info(()=> totalMB + " ** " + maxMB);
                 logger.info(()=> "PS.main: Waiting for gradBuffer");
                 val rail = gradBuffer.get(); // blocking
                 updateTimer.tic();
@@ -237,7 +237,7 @@ public class SendBroadcast(config:RudraConfig,
                     weights = toLearners.put(weights); // bcast to learners
                 } else {
                     logger.info(()=> "PS.main: 2 pinging test Manager");
-                    if (testManager!=null) testManager.touch();                     
+                    if (testManager!=null) testManager.touch(countToBcast);                     
                 }
                updateTimer.toc();
             } // while
@@ -261,7 +261,7 @@ public class SendBroadcast(config:RudraConfig,
     def run(beatCount:UInt, numXfers:UInt) {
         val team = new Team(learnerGroup);
 
-        Learner.initNativeLearnerStatics(config, confName, meanFile, seed, mom,
+        Learner.initNativeLearnerStatics(config, confName, seed, mom,
                                          adarho, adaepsilon, ln);
         val nl = Learner.makeNativeLearner(config, weightsFile, solverType);
 
@@ -292,7 +292,7 @@ public class SendBroadcast(config:RudraConfig,
             logger.info(()=>"SB: Starting place loop");
             for (p in learnerGroup)
                 if (p.id !=0) at(p) async { 
-                        Learner.initNativeLearnerStatics(config, confName, meanFile,
+                        Learner.initNativeLearnerStatics(config, confName,
                                                          seed, mom, 
                                                          adarho, adaepsilon, ln);
                         logger.info(()=>"SB: Starting main at " + here);
@@ -306,7 +306,6 @@ public class SendBroadcast(config:RudraConfig,
                             : new XchgBuffer[TimedWeight](new TimedWeight(networkSize)); 
                         val learner = new Learner(config, confName, spread,
                                                   nLearner, team, logger, lt, solverType);
-                        learner.epochStartTime= System.nanoTime();
                         learner.initWeightsIfNeeded(weightsFile);
                         logger.info(()=>"SB.learner: ready to rock and roll.");
                         team.barrier(); // ready to rock and roll

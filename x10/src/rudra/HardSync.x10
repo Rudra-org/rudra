@@ -60,13 +60,13 @@ public class HardSync(noTest:Boolean, weightsFile:String, lr:Int) extends Learne
         logger.info(()=>"Learner: started.");
         val compG = new TimedGradient(size); 
         compG.timeStamp = UInt.MAX_VALUE;
-        val testManager = here.id==0? (this as Learner).new TestManager(config, noTest, solverType) : null;
+        val testManager = (here.id==0) ? new TestManager(config, nLearner, noTest, solverType, lt) : null;
         if (here.id==0) testManager.initialize();
         val dest = new TimedGradient(size);
-        epochStartTime= System.nanoTime();
         initWeightsIfNeeded(weightsFile); 
         val loggerRec = new Logger(lr);
         var currentEpoch:UInt = 0un;
+        var totalMBProcessed:UInt = 0un;
         while (totalMBProcessed < maxMB) {
             computeGradient(compG);
             allreduceTimer.tic();
@@ -80,14 +80,15 @@ public class HardSync(noTest:Boolean, weightsFile:String, lr:Int) extends Learne
                              + dest + "(" + allreduceTimer.lastDurationMillis()+" ms)");
             weightTimer.tic();
             acceptNWGradient(dest);
+            totalMBProcessed += dest.loadSize();
             weightTimer.toc();
             // follow learning rate schedule given in config file
             if ((totalMBProcessed / mbPerEpoch) > currentEpoch) {
                 val newLearningRate = config.lrMult(++currentEpoch);
                 loggerRec.notify(()=> "Reconciler: updating learning rate to "+ newLearningRate);
                 nLearner.setLearningRateMultiplier(newLearningRate);
+                if (testManager != null) testManager.touch(dest.loadSize());
             }
-            if (testManager != null) testManager.touch();
         } // while !done
         if (testManager != null) testManager.finalize();
         logger.info(()=>"Learner: Exited main loop.");

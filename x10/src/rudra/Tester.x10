@@ -42,7 +42,7 @@ import rudra.util.SwapBuffer;
 import rudra.util.Logger;
 import rudra.util.Timer;
 
-public class Tester(config:RudraConfig, testerPlace:Place, confName:String, logger:Logger, solverType:String) {
+public class Tester(config:RudraConfig, testerPlace:Place, logger:Logger, solverType:String) {
     static val P = Place.numPlaces();
     var weightsPLH:PlaceLocalHandle[Rail[Float]];
 

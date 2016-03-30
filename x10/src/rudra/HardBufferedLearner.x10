@@ -60,9 +60,8 @@ public class HardBufferedLearner(noTest:Boolean,
         logger.info(()=>"Learner: started.");
         var compG:TimedGradient = new TimedGradient(size); 
         compG.timeStamp = UInt.MAX_VALUE;
-        val testManager = here.id==0? (this as Learner).new TestManager(config, noTest, solverType) : null;
+        val testManager = (here.id==0) ? new TestManager(config, this.nLearner, noTest, solverType, lt) : null;
         if (here.id==0) testManager.initialize();
-        epochStartTime= System.nanoTime();
         initWeightsIfNeeded(weightsFile);
         var dest:TimedGradient = new TimedGradient(size); 
         computeGradient(compG);         
@@ -73,9 +72,10 @@ public class HardBufferedLearner(noTest:Boolean,
             compG=fromLearner.put(compG);
 
             dest=toLearner.get(dest);
+            val loadSize = dest.loadSize();
             acceptNWGradient(dest);
 
-            if (testManager != null) testManager.touch();
+            if (testManager != null) testManager.touch(loadSize);
         } // while !done
 
         if (testManager != null) testManager.finalize();

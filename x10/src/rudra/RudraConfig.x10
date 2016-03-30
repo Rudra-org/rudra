@@ -49,6 +49,7 @@ import x10.io.EOFException;
  * trainLabels     = path/trainLabels.bin
  * testData        = path/testData.bin
  * testLabels      = path/testLabels.bin
+ * meanFile        = path/meanFile.csv
  * layerCfgFile	   = path/layers.cnn
  * 
  * testInterval    = 1
@@ -78,6 +79,8 @@ public class RudraConfig {
     var testData:String;
     var testLabels:String;
     var numTestSamples:UInt;
+
+    var meanFile:String;
 
     var numEpochs:UInt;
     var mbSize:UInt;
@@ -136,6 +139,8 @@ public class RudraConfig {
                         config.testLabels = readConfig(line);
                     } else if (line.startsWith("numTestSamples")) {
                         config.numTestSamples = readUInt(line);
+                    } else if (line.startsWith("meanFile")) {
+                        config.meanFile = readConfig(line);
                     } else if (line.startsWith("numEpochs")) {
                         config.numEpochs = readUInt(line);
                     } else if (line.startsWith("batchSize")) {

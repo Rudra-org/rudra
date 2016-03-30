@@ -1,5 +1,4 @@
 /**
- *
  * ImmedLearner.x10
  *
  * Rudra Distributed Learning Platform
@@ -55,14 +54,7 @@ public class ImmedLearner(noTest:Boolean) extends Learner {
 
     // method called by reconciler thread.
     val lock = new Lock();
-    public def getTotalMBProcessed():UInt {
-        try {
-            lock.lock();
-            return totalMBProcessed;
-        } finally {
-            lock.unlock();
-        }
-    }
+
     def setTimeStamp(ts:UInt):void {
         try {
             lock.lock();
@@ -75,7 +67,6 @@ public class ImmedLearner(noTest:Boolean) extends Learner {
         val includeMB = g.loadSize();
         try {
             lock.lock();
-            totalMBProcessed += includeMB;
             timeStamp = g.timeStamp;
         } finally {
             lock.unlock();
@@ -87,15 +78,16 @@ public class ImmedLearner(noTest:Boolean) extends Learner {
         logger.info(()=>"Learner: started.");
         var compG:TimedGradient = new TimedGradient(size); 
         compG.timeStamp = UInt.MAX_VALUE;
-        val testManager = here.id==0? (this as Learner).new TestManager(config, noTest, solverType) : null;
+        val testManager = (here.id==0) ? new TestManager(config, this.nLearner, noTest, solverType, lt) : null;
         if (testManager != null) testManager.initialize();
         val currentWeight = new TimedWeight(networkSize);
         initWeights();
         while (! done.get()) {
             computeGradient(compG);
+            val loadSize = compG.loadSize();
             compG=deliverGradient(compG, fromLearner);
             // the reconciler will come in and update weights asynchronously
-            if (testManager != null) testManager.touch();
+            if (testManager != null) testManager.touch(loadSize);
         } // while !done
 
         if (testManager != null) testManager.finalize();
