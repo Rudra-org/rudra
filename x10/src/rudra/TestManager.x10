@@ -62,8 +62,8 @@ public class TestManager(config:RudraConfig, nLearner:NativeLearner, noTest:Bool
     }
 
     def touch(loadSize:Long) {
-        touch(null);
         totalMBProcessed += loadSize;
+        touch(null);
     }
 
     def touch(tw:TimedWeight):void {
@@ -71,7 +71,7 @@ public class TestManager(config:RudraConfig, nLearner:NativeLearner, noTest:Bool
         if (tw != null) totalMBProcessed += tw.loadSize;
         // Called by place 0 learner or PS: Test for epoch transition.
         // Try to get a Tester to run with these weights
-        val ts = (tw==null) ? totalMBProcessed : tw.timeStamp();
+        val ts = totalMBProcessed;
         val thisEpoch = ts/mbPerEpoch;
         if (thisEpoch <= epoch) return;
         val oldEpoch = epoch;

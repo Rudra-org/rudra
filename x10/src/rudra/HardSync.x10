@@ -78,16 +78,17 @@ public class HardSync(noTest:Boolean, weightsFile:String, lr:Int) extends Learne
             if (here.id==0) 
                loggerRec.notify(()=>"Reconciler: <- Network "  
                              + dest + "(" + allreduceTimer.lastDurationMillis()+" ms)");
+            val deltaLoad= dest.loadSize();
             weightTimer.tic();
             acceptNWGradient(dest);
-            totalMBProcessed += dest.loadSize();
+            totalMBProcessed += deltaLoad;
             weightTimer.toc();
+            if (testManager != null) testManager.touch(deltaLoad);
             // follow learning rate schedule given in config file
             if ((totalMBProcessed / mbPerEpoch) > currentEpoch) {
                 val newLearningRate = config.lrMult(++currentEpoch);
                 loggerRec.notify(()=> "Reconciler: updating learning rate to "+ newLearningRate);
                 nLearner.setLearningRateMultiplier(newLearningRate);
-                if (testManager != null) testManager.touch(dest.loadSize());
             }
         } // while !done
         if (testManager != null) testManager.finalize();
