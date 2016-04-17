@@ -56,9 +56,6 @@ BinarySampleReader::BinarySampleReader(std::string sampleFileName,
 	trainingLabelFileType = lookupFileType(yExt);
 }
 
-BinarySampleReader::~BinarySampleReader() {
-}
-
 void BinarySampleReader::checkFiles() {
 	std::ifstream fx(trainingDataFile.c_str(), std::ios::in | std::ios::binary);
 	if (!fx) {
