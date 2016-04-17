@@ -36,7 +36,6 @@
 #ifndef RUDRA_IO_GPFSSAMPLECLIENT_H
 #define RUDRA_IO_GPFSSAMPLECLIENT_H
 
-#include "rudra/io/SampleReader.h"
 #include "rudra/io/SampleClient.h"
 #include "rudra/util/RudraRand.h"
 #include <iostream>
@@ -45,6 +44,8 @@
 #define GPFS_BUFFER_COUNT 1
 
 namespace rudra {
+class SampleReader;
+
 class GPFSSampleClient: public SampleClient {
 public:
 	const size_t batchSize;

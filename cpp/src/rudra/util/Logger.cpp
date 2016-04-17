@@ -37,6 +37,8 @@
 #include <cstdlib>
 #include <iostream>
 
+static LogLevel LOG_LEVEL = WARNING;
+
 namespace rudra {
 void Logger::setLogFile(std::string f) {
 	// TODO allow logging to file

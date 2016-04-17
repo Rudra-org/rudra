@@ -34,6 +34,7 @@
  */
 
 #include "rudra/io/GPFSSampleClient.h"
+#include "rudra/io/SampleReader.h"
 #include <cstring>
 #include <pthread.h>
 #include <algorithm>

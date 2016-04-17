@@ -37,7 +37,6 @@
 #define BINARYSAMPLEREADER_H_
 
 #include "rudra/io/SampleReader.h"
-#include "rudra/util/RudraRand.h"
 #include <string>
 #include <vector>
 
@@ -53,7 +52,7 @@ public:
 	BinFileType trainingLabelFileType;
 
 	BinarySampleReader(std::string sampleFileName, std::string labelFileName);
-	~BinarySampleReader();
+	virtual ~BinarySampleReader() {}
 
 	std::string getFileExt(const std::string& s);
 	BinFileType lookupFileType(const std::string& s);

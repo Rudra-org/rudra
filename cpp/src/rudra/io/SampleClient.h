@@ -44,6 +44,7 @@ class SampleClient {
 public:
 	virtual size_t getSizePerLabel() = 0;
 	virtual void getLabelledSamples(float* samples, float* labels) = 0;
+	virtual ~SampleClient() {}
 };
 } /* namespace rudra */
 

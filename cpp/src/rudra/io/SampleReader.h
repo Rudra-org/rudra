@@ -53,6 +53,7 @@ public:
 
 	SampleReader() {
 	}
+	virtual ~SampleReader() {}
 
 	virtual void readLabelledSamples(const std::vector<size_t>& idx, float* X,
 			float* Y) = 0;

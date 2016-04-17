@@ -40,9 +40,6 @@
 enum LogLevel {
 	INFO, WARNING, ERROR, FATAL
 };
-static std::string levelName[] = { "INFO", "WARNING", "ERROR", "FATAL" };
-
-static LogLevel LOG_LEVEL = WARNING;
 
 namespace rudra {
 class Logger {
