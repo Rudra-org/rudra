@@ -40,7 +40,7 @@ RUDRA_LEARNER ?= theano
 RUDRA_EXE = rudra-$(RUDRA_LEARNER)
 
 X10CXX_PREARGS += -cxx-prearg -I$(RUDRA_HOME)/include
-X10CXX_POSTARGS += -cxx-postarg -L$(RUDRA_HOME)/lib -cxx-postarg -lrudra -cxx-postarg -lrudralearner-$(RUDRA_LEARNER)
+X10CXX_POSTARGS += -cxx-postarg -L$(RUDRA_HOME)/lib -cxx-postarg -lrudralearner-$(RUDRA_LEARNER) -cxx-postarg -lrudra 
 
 # vj need to add these for theano linkage.
 # TODO: Do this in a system generic way, this is obtained by
