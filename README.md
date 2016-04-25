@@ -4,7 +4,7 @@ Rudra is a distributed framework for large-scale machine learning using deep
 neural networks, which accepts training data and model configuration as inputs
 from the user and outputs the parameters of the trained model.
 
-Detailed documentation can be found at the [project wiki](https://github.com/milthorpe/rudra/wiki).
+Detailed documentation can be found at the [project wiki](https://github.com/rudra-org/rudra/wiki).
 
 # Installation
 
@@ -19,7 +19,7 @@ Dependencies:
 The default version of Rudra uses a proprietary IBM learner implementation
 with cuDNN.
 There is also an example [Theano](http://deeplearning.net/software/theano/)
-learner, the source code for which is available at (rudra-dist)[https://github.com/saraswat/rudra-dist].
+learner, the source code for which is available at [rudra-dist](https://github.com/saraswat/rudra-dist).
 A mock learner is also included for unit testing purposes.
 Other learners are supported by implementing the learner API in 
 `include/NativeLearner.h` . The make variable `RUDRA_LEARNER` chooses between
